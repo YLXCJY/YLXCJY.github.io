@@ -1,32 +1,80 @@
-(() => {
-  const { author } = window.AD_CONFIG;
-
-  document.addEventListener('copy', e => {
-    let clipboardData = e.clipboardData || window.clipboardData;
-    if(!clipboardData) {
-      return;
+$(function () {
+  // Add copy icon
+  $('figure.highlight').wrap('<div class="code-area-wrap"></div>')
+  var $copyIcon = $('<i class="fa fa-clipboard" aria-hidden="true"></i>')
+  var $notice = $('<div class="copy-notice"></div>')
+  var $codeLanguage = $('<span class="codeblock-language"></span>')
+  $('.code-area-wrap').prepend($copyIcon)
+  $('.code-area-wrap').prepend($notice)
+  $('.code-area-wrap').prepend($codeLanguage)
+  $('.code-area-wrap').each(function (index, element) {
+    var codeLanguage = $(element)
+      .find('figure.highlight')
+      .attr('class')
+      .replace('highlight', '')
+      .trim()
+    $(element)
+      .find('.codeblock-language')
+      .text(codeLanguage)
+  })
+  // copy function
+  function copy (text, ctx) {
+    if (
+      document.queryCommandSupported &&
+      document.queryCommandSupported('copy')
+    ) {
+      try {
+        document.execCommand('copy') // Security exception may be thrown by some browsers.
+        $(ctx)
+          .prev('.copy-notice')
+          .text(GLOBAL_CONFIG.copy.success)
+          .velocity(
+            {
+              translateX: -30,
+              opacity: 1
+            },
+            {
+              loop: 1,
+              duration: 750,
+              easing: 'easeOutQuint'
+            }
+          )
+      } catch (ex) {
+        $(ctx)
+          .prev('.copy-notice')
+          .text(GLOBAL_CONFIG.copy.error)
+          .velocity(
+            {
+              translateX: -30,
+              opacity: 1
+            },
+            {
+              loop: 1,
+              duration: 750,
+              easing: 'easeOutQuint'
+            }
+          )
+        return false
+      }
+    } else {
+      $(ctx)
+        .prev('.copy-notice')
+        .text(GLOBAL_CONFIG.copy.noSupport)
     }
-
-    const selection = window.getSelection().toString();
-    if(selection.length <= 42) {
-      return;
-    }
-
-    e.preventDefault();
-
-    const textData = selection + '\n\n'
-      + (author ? `作者: ${author}\n` : '')
-      + '链接: ' + window.location.href + '\n'
-      + '来源: ' + window.location.host + '\n'
-      + '著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。\n\n';
-
-    const htmlData = selection + '<br/><br/>'
-      + (author ? `<b>作者</b>: ${author}<br/>` : '')
-      + `<b>链接</b>: <a href="${window.location.href}">${window.location.href}</a><br/>`
-      + `<b>来源</b>: <a href="${window.location.origin}">${window.location.host}</a><br/>`
-      + '著作权归作者所有。商业转载请联系作者获得授权，非商业转载请注明出处。<br/>';
-
-      clipboardData.setData('text/html', htmlData);
-      clipboardData.setData('text/plain', textData);
-  });
-})();
+  }
+  // click events
+  $('.code-area-wrap .fa-clipboard').on('click', function () {
+    var selection = window.getSelection()
+    var range = document.createRange()
+    range.selectNodeContents(
+      $(this)
+        .siblings('figure')
+        .find('.code pre')[0]
+    )
+    selection.removeAllRanges()
+    selection.addRange(range)
+    var text = selection.toString()
+    copy(text, this)
+    selection.removeAllRanges()
+  })
+})
